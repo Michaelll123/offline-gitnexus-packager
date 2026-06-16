@@ -21,14 +21,15 @@ jobs:
           # 在真实的 Linux 环境下安装，绝对能完美拉取到 Linux 版的 C++ 底层预编译文件！
           npm install gitnexus
 
-      - name: 压缩为 ZIP
+      - name: 压缩为 TAR.GZ (完美保留软链接和权限)
         run: |
           cd gitnexus-linux-pack
-          zip -q -r ../gitnexus-linux-offline.zip .
-
+          # 用 tar 打包，保留所有的 Linux 快捷方式和权限
+          tar -czvf ../gitnexus-linux-offline.tar.gz .
+      
       - name: 上传打包好的文件供下载
         uses: actions/upload-artifact@v4
         with:
           name: GitNexus-Linux-Offline-Package
-          path: gitnexus-linux-offline.zip
-          retention-days: 3 # 压缩包在云端保留 3 天供你下载
+          path: gitnexus-linux-offline.tar.gz
+          retention-days: 3
