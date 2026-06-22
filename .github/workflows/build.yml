@@ -1,32 +1,43 @@
-name: Build GitNexus for Linux Offline
+name: Build GitNexus for Enterprise Linux (Final)
 
 on:
-  workflow_dispatch: # 允许你手动点击按钮触发任务
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # 使用 GitHub 免费的官方纯正 Linux (x64) 环境
+    runs-on: ubuntu-latest
 
     steps:
-      - name: 设置 Node.js 22
+      - name: 设置 Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
       - name: 初始化并安装 GitNexus
         run: |
           mkdir gitnexus-linux-pack
           cd gitnexus-linux-pack
           npm init -y
-          # 在真实的 Linux 环境下安装，绝对能完美拉取到 Linux 版的 C++ 底层预编译文件！
           npm install gitnexus
 
-      - name: 压缩为 TAR.GZ (完美保留软链接和权限)
+      - name: 魔法步骤：打包高兼容性万能 C++ 运行库
+        run: |
+          # 下载轻量级 conda 工具，专门为了偷它的高兼容底层库
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          
+          # 下载 conda-forge 的 libstdcxx-ng（它支持最新的 GLIBCXX，但不依赖新系统）
+          $HOME/miniconda/bin/conda install -c conda-forge libstdcxx-ng -y
+          
+          # 创建我们自己的 lib 目录，并把这个万能库拷贝进去
+          mkdir -p gitnexus-linux-pack/lib
+          cp -d $HOME/miniconda/lib/libstdc++.so.6* ./gitnexus-linux-pack/lib/
+
+      - name: 压缩为 TAR.GZ (完美保留软链接)
         run: |
           cd gitnexus-linux-pack
-          # 用 tar 打包，保留所有的 Linux 快捷方式和权限
           tar -czvf ../gitnexus-linux-offline.tar.gz .
-      
+
       - name: 上传打包好的文件供下载
         uses: actions/upload-artifact@v4
         with:
